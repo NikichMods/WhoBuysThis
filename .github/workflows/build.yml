@@ -1,0 +1,60 @@
+name: Build production candidate
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'dev/**'
+      - main
+    paths:
+      - 'src/**'
+      - 'WhoBuysThis.csproj'
+      - 'nuget.config'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore WhoBuysThis.csproj --configfile nuget.config
+
+      - name: Build
+        run: dotnet build WhoBuysThis.csproj -c Release --no-restore
+
+      - name: Prepare artifact
+        shell: pwsh
+        run: |
+          $dll = Resolve-Path 'bin/Release/WhoBuysThis.dll'
+          $out = Join-Path $PWD 'artifact'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item $dll (Join-Path $out 'WhoBuysThis.dll')
+          $hash = (Get-FileHash $dll -Algorithm SHA256).Hash.ToLowerInvariant()
+          @(
+            "version=0.1.0"
+            "source_sha=${{ github.sha }}"
+            "sha256=$hash"
+            "assembly=WhoBuysThis.dll"
+          ) | Set-Content -Encoding UTF8 (Join-Path $out 'BUILD_IDENTITY.txt')
+          Get-Content (Join-Path $out 'BUILD_IDENTITY.txt')
+
+      - name: Upload candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: WhoBuysThis-0.1.0-${{ github.sha }}
+          path: artifact/*
+          if-no-files-found: error
+          retention-days: 14
