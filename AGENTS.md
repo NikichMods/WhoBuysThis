@@ -59,7 +59,7 @@ Avoid without proven need:
 - duplicated trade formulas or large hardcoded mappings;
 - broad UI replacement when standard tooltip data can express the result.
 
-Strong candidate seam: `ItemDefinition.GetTooltipData()`; treat it as unverified until current evidence confirms it.
+Verified UI seam: `ItemDefinition.GetTooltipData()` with standard `BubbleWidgetData`; see `docs/VERIFIED_GAME_DATA.md`. The buyer evaluator and cache lifecycle remain research-gated.
 
 ## User-facing behavior requirements
 
