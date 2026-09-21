@@ -1,0 +1,11 @@
+bin/
+obj/
+dist/
+research/build/
+.vs/
+*.user
+*.suo
+*.dll
+*.zip
+*.rar
+*.7z
