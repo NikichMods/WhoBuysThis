@@ -106,7 +106,7 @@ namespace WhoBuysThis
 
                 string name = GameApi.Localize(entry.LocalizationId);
                 if (string.IsNullOrEmpty(name) || name == entry.LocalizationId) continue;
-                visible.Add(name + " — " + FormatTier(tier));
+                visible.Add(name + "\\u00A0" + FormatTier(tier));
             }
 
             if (visible.Count == 0) return;

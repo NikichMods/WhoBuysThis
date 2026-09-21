@@ -1,8 +1,31 @@
 # Test Build Log
 
-## 0.1.0 — candidate
+## 0.1.1 — candidate
 
-- Status: handed candidate / awaiting runtime acceptance
+- Status: build pending
+- Purpose: presentation-only follow-up to 0.1.0
+- Change:
+  - remove the em dash between merchant name and Tier;
+  - use a non-breaking space between merchant name and Roman-numeral Tier so a wrap cannot leave the Tier by itself on the next line.
+- Expected format: `Мельник II, Фермер I` / `Merchant III`
+- Development branch: `feature/tooltip-buyers`
+
+### Requested runtime check
+
+1. Re-check a multi-buyer tooltip that previously wrapped as `Фермер` + newline + `— I`.
+2. Confirm the pair now stays together as `Фермер I` when wrapping.
+3. Confirm ordinary one-buyer and Tier-II/III tooltips still render normally.
+4. No need to repeat broad technology/cooking-window compatibility checks unless something regresses.
+
+### Result
+
+Awaiting build and runtime test.
+
+---
+
+## 0.1.0 — superseded candidate
+
+- Status: runtime behavior passed; superseded by 0.1.1 for one presentation defect
 - Purpose: first production implementation of buyer + tier information in the standard item tooltip
 - Source commit: `6ef8220be3bdab0189587fd6bfca24afbea1a8de`
 - Frozen source ref: `candidate/0.1.0`
@@ -14,28 +37,22 @@
 - DLL: `WhoBuysThis.dll`
 - DLL SHA-256: `5f8ee9345bd70621d458d878e65e797b7176acd08a7c2ed4d146860804e815cc`
 - Build: Windows GitHub-hosted runner, Release/net48, successful
-- Production source does not embed or redistribute Graveyard Keeper assemblies; game integration is bound once at runtime through cached reflection/Harmony metadata.
 
-### Intended behavior
+### Runtime evidence
 
-- Build one structural exact-item buyer index after `MainGame.OnGameStartedPlaying()`.
-- Append buyer information through the standard `ItemDefinition.GetTooltipData()` result.
-- Show ordinary merchants only when present in native `KnownNPCList`.
-- Re-evaluate conditional product types only for conditional candidates (currently Tress paints).
-- Treat staged Game of Crone vendor proxies as one conceptual merchant and use active proxy presence as their unlock/progression signal.
-- Do not instantiate Vendor/NPC objects, poll, run per-frame work, modify save/economy, or calculate prices.
+- Plugin loaded normally in Graveyard Keeper 1.407 / BepInEx 5.4.23.5.
+- Structural buyer index built successfully at `OnGameStartedPlaying`: 234 indexed items, 267 buyer entries, 24 conceptual vendor entries.
+- No Who Buys This? initialization, index-build, or tooltip-rendering error was observed in the returned log.
+- User visually confirmed correct buyer/tier output for one-buyer and multi-buyer examples.
+- User checked inventory plus technology and cooking UI contexts without observing regressions.
+- User checked multiple game languages; the native merchant names followed the active language. The mod-owned heading remains Russian for Russian and English otherwise in this candidate.
+- Remaining defect: a long multi-buyer line could wrap between merchant name and Tier, leaving `— I` isolated on the next line.
 
-### Runtime acceptance checks
+### Intended architecture retained
 
-1. Plugin loads with no Harmony/binding/index-build error.
-2. Known ordinary merchant item shows buyer and Roman-numeral tier in the standard tooltip.
-3. Multi-buyer item lists all currently known buyers without duplicates.
-4. Tier-II/III items show the correct required tier.
-5. Unknown ordinary merchants are not leaked.
-6. Current Game of Crone staged vendor, when applicable, is shown once rather than as separate `_1/_2/_3` definitions.
-7. Items with no visible known/unlocked buyer get no added tooltip section.
-8. No gameplay/economy/save behavior changes and no noticeable tooltip hitching.
-
-### Result
-
-Awaiting user runtime test.
+- One structural exact-item buyer index after `MainGame.OnGameStartedPlaying()`.
+- Standard `ItemDefinition.GetTooltipData()` postfix.
+- Native `KnownNPCList` filter for ordinary merchants.
+- Conditional product-type re-check only for conditional candidates.
+- Staged Game of Crone vendor proxies merged into one conceptual merchant.
+- No Vendor/NPC construction, polling, per-frame work, economy/save mutation, or price calculation.

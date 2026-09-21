@@ -12,7 +12,7 @@ namespace WhoBuysThis
     {
         public const string PluginGuid = "nikich.gyk.whobuysthis";
         public const string PluginName = "Who Buys This?";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.1.1";
 
         internal static ManualLogSource Log;
         private Harmony _harmony;
