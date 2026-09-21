@@ -2,11 +2,20 @@
 
 ## 1.0.0 — release candidate
 
-- Status: build pending
+- Status: handed release candidate / awaiting smoke-test acceptance
 - Purpose: first public stable release candidate
 - Parent accepted behavior: 0.1.1
 - Change from 0.1.1: version metadata only; production logic and UI code are unchanged
+- Source commit: `7470e783015faf59b32c7d51a77685fdbb731d59`
+- Frozen source ref: `candidate/1.0.0`
 - Development branch: `dev/1.0.0`
+- GitHub Actions run: `35629287909`
+- Artifact ID: `10654071531`
+- Artifact name: `WhoBuysThis-1.0.0-7470e783015faf59b32c7d51a77685fdbb731d59`
+- Artifact ZIP digest: `sha256:ec904d051b5c4649af877ef0c4b9a71ae39ce44183900b0f1269247c75170a2e`
+- DLL: `WhoBuysThis.dll`
+- DLL SHA-256: `6f57726ad8dd81f0e32b7dfb8bf35187be8efade86e00132036c9ade7154e7f0`
+- Build: Windows GitHub-hosted runner, Release/net48, successful
 
 ### Required smoke test
 
