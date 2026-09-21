@@ -2,24 +2,36 @@
 
 ## 0.1.1 — candidate
 
-- Status: build pending
+- Status: handed candidate / awaiting focused runtime acceptance
 - Purpose: presentation-only follow-up to 0.1.0
-- Change:
-  - remove the em dash between merchant name and Tier;
-  - use a non-breaking space between merchant name and Roman-numeral Tier so a wrap cannot leave the Tier by itself on the next line.
-- Expected format: `Мельник II, Фермер I` / `Merchant III`
-- Development branch: `feature/tooltip-buyers`
+- Source commit: `5d56e50423a6574b59725ed79229eca69ab2e39f`
+- Frozen source ref: `candidate/0.1.1`
+- Development branch at build time: `feature/tooltip-buyers`
+- GitHub Actions run: `35626138883`
+- Artifact ID: `10651932654`
+- Artifact name: `WhoBuysThis-0.1.1-5d56e50423a6574b59725ed79229eca69ab2e39f`
+- Artifact ZIP digest: `sha256:3e837a4d866cec53e838d1d5836ff032aa0bab3f2b2ccc16f94795ed27d94c72`
+- DLL: `WhoBuysThis.dll`
+- DLL SHA-256: `9485e019e50240c1ffd8ec6c39c0b8dca587bc6a6e98ece840b0682aaf92ba96`
+- Build: Windows GitHub-hosted runner, Release/net48, successful
+
+### Change
+
+- Removed the em dash between merchant name and Tier.
+- Merchant/Tier pairs now render as e.g. `Мельник II, Фермер I`.
+- A Unicode non-breaking space (U+00A0) joins merchant name and Roman-numeral Tier so wrapping should move the pair together instead of leaving the Tier alone on a new line.
+- Trading/index/filter behavior is unchanged from 0.1.0.
 
 ### Requested runtime check
 
 1. Re-check a multi-buyer tooltip that previously wrapped as `Фермер` + newline + `— I`.
 2. Confirm the pair now stays together as `Фермер I` when wrapping.
-3. Confirm ordinary one-buyer and Tier-II/III tooltips still render normally.
+3. Confirm one ordinary one-buyer tooltip still renders normally.
 4. No need to repeat broad technology/cooking-window compatibility checks unless something regresses.
 
 ### Result
 
-Awaiting build and runtime test.
+Awaiting user runtime test.
 
 ---
 
@@ -45,7 +57,7 @@ Awaiting build and runtime test.
 - No Who Buys This? initialization, index-build, or tooltip-rendering error was observed in the returned log.
 - User visually confirmed correct buyer/tier output for one-buyer and multi-buyer examples.
 - User checked inventory plus technology and cooking UI contexts without observing regressions.
-- User checked multiple game languages; the native merchant names followed the active language. The mod-owned heading remains Russian for Russian and English otherwise in this candidate.
+- User checked multiple game languages; native merchant names followed the active language. The mod-owned heading remained Russian for Russian and English otherwise in this candidate.
 - Remaining defect: a long multi-buyer line could wrap between merchant name and Tier, leaving `— I` isolated on the next line.
 
 ### Intended architecture retained
