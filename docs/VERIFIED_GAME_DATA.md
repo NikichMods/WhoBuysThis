@@ -323,14 +323,20 @@ Run the same small counts at the candidate one-time lifecycle seams and identify
 
 The harness must not write persistent gameplay state and must not be merged into production by default.
 
-## Product decision still open
+## Product decisions fixed 2026-09-21
 
-Two technically viable presentation modes remain:
+- **Display only merchants already met/known by the current save.** Use the game's own `KnownNPCList`/NPC alias identity rather than a custom discovery database.
+- **Do not design first-release architecture around arbitrary third-party Harmony patches to `Vendor.CanBuyItem` / `Vendor.CanTradeItem`.** Native 1.407 game data/semantics are the compatibility target. Ordinary coexistence remains desirable, but generic semantic composition with trade-overhauling mods is explicitly out of scope.
 
-1. **All potential buyers** — simplest lookup behavior and no discovery-state dependency, but it can reveal merchants the player has not met.
-2. **Only met/known buyers** — can likely use the game's own `KnownNPCList`/alias data and remain event-driven/cheap, but special/DLC traders must first be verified.
+### Lifecycle lesson carried from Day Wheel Quest Markers
 
-Do not choose between these modes without the user's product decision.
+A fresh Graveyard Keeper save may legitimately have no relevant known NPCs yet. In Day Wheel Quest Markers, treating missing weekday NPCs as "cache not ready" caused repeated/heavy initialization and later a measured 302.22 ms first-NPC structural rebuild.
+
+For Who Buys This?:
+- an empty `known_npcs` / zero known merchants is a valid **ready empty filter result**, not an initialization failure;
+- structural vendor/item discovery must not depend on the first known merchant appearing;
+- meeting a new merchant may only require cheap known-state rebinding/filtering, never rebuilding the structural buyer matrix;
+- no retry loop or recurring heavy scan is permitted merely because zero merchants are known.
 
 ## Current architecture status
 
@@ -341,7 +347,7 @@ Do not choose between these modes without the user's product decision.
 - Exact-item/quality strategy: **verified**.
 - Side-effect risk of forcing Vendor construction: **verified; avoid**.
 - One-time item -> buyers/tier index: **feasible, evaluator not yet frozen**.
-- Generic compatibility with arbitrary CanBuyItem/CanTradeItem Harmony patches: **runtime-dependent / not guaranteed by static data**.
+- Generic compatibility with arbitrary CanBuyItem/CanTradeItem Harmony patches: **explicitly out of scope for first release**.
 - Active DLC/special vendor set: **runtime-open**.
 - Dynamic `additional_types` / cache invalidation need: **runtime-open**.
 - Final cache-build lifecycle seam: **runtime-open**.
