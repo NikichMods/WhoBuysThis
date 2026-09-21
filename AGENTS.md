@@ -42,7 +42,7 @@ Production architecture must not be fixed until evidence establishes:
 - tooltip construction seam;
 - safe cache-build lifecycle and any invalidation need;
 - behavior for DLC/special merchants/quality items;
-- compatibility implications of other Harmony patches to vendor eligibility methods.
+- the safe compatibility boundary around vendor eligibility methods; generic semantic support for arbitrary third-party trade-overhaul Harmony patches is not a first-release requirement.
 
 Record durable verified findings in `docs/VERIFIED_GAME_DATA.md` with evidence/source references. Unknowns stay explicitly unknown.
 
@@ -66,7 +66,7 @@ Verified UI seam: `ItemDefinition.GetTooltipData()` with standard `BubbleWidgetD
 - Vanilla-friendly informational QoL only.
 - Use the standard tooltip when practical.
 - Do not expose current/predicted sale price in initial scope.
-- Product decision remains open: show all potential buyers vs only merchants already discovered/met by the player. Do not silently choose one before presenting the technical trade-offs to the user.
+- First-release product decision: show only merchants already met/known by the current save, using the game's own known-NPC/alias state. Zero known merchants on a fresh save is a valid ready-empty state and must not trigger structural retries/rebuilds.
 
 ## Git / version / acceptance workflow
 
