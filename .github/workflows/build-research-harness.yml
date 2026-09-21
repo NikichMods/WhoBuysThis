@@ -1,0 +1,59 @@
+name: Build research harness
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-research-harness.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      RESEARCH_SOURCE_SHA: 97375f2d352c5ac1ca22bb186b4249cae16e4141
+
+    steps:
+      - name: Checkout frozen research source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RESEARCH_SOURCE_SHA }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore WhoBuysThisResearch.csproj --configfile nuget.config
+
+      - name: Build
+        run: dotnet build WhoBuysThisResearch.csproj -c Release --no-restore
+
+      - name: Prepare artifact
+        shell: pwsh
+        run: |
+          $dll = Resolve-Path 'bin/Release/WhoBuysThisResearch.dll'
+          $out = Join-Path $PWD 'artifact'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item $dll (Join-Path $out 'WhoBuysThisResearch.dll')
+          $hash = (Get-FileHash $dll -Algorithm SHA256).Hash.ToLowerInvariant()
+          @(
+            "source_sha=${{ env.RESEARCH_SOURCE_SHA }}"
+            "sha256=$hash"
+            "assembly=WhoBuysThisResearch.dll"
+            "purpose=Who Buys This? vendor-matrix research harness"
+          ) | Set-Content -Encoding UTF8 (Join-Path $out 'BUILD_IDENTITY.txt')
+          Get-Content (Join-Path $out 'BUILD_IDENTITY.txt')
+
+      - name: Upload research harness
+        uses: actions/upload-artifact@v4
+        with:
+          name: WhoBuysThisResearch-97375f2
+          path: artifact/*
+          if-no-files-found: error
+          retention-days: 7
