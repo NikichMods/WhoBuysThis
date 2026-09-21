@@ -44,7 +44,7 @@ jobs:
           Copy-Item $dll (Join-Path $out 'WhoBuysThis.dll')
           $hash = (Get-FileHash $dll -Algorithm SHA256).Hash.ToLowerInvariant()
           @(
-            "version=0.1.1"
+            "version=1.0.0"
             "source_sha=${{ github.sha }}"
             "sha256=$hash"
             "assembly=WhoBuysThis.dll"
@@ -54,7 +54,7 @@ jobs:
       - name: Upload candidate
         uses: actions/upload-artifact@v4
         with:
-          name: WhoBuysThis-0.1.1-${{ github.sha }}
+          name: WhoBuysThis-1.0.0-${{ github.sha }}
           path: artifact/*
           if-no-files-found: error
           retention-days: 14

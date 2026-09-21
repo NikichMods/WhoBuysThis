@@ -1,8 +1,29 @@
 # Test Build Log
 
-## 0.1.1 — candidate
+## 1.0.0 — release candidate
 
-- Status: handed candidate / awaiting focused runtime acceptance
+- Status: build pending
+- Purpose: first public stable release candidate
+- Parent accepted behavior: 0.1.1
+- Change from 0.1.1: version metadata only; production logic and UI code are unchanged
+- Development branch: `dev/1.0.0`
+
+### Required smoke test
+
+1. Confirm BepInEx reports `Who Buys This? 1.0.0`.
+2. Load the same save and open one item tooltip that has buyer information.
+3. Confirm the buyer line still renders normally.
+4. Return the fresh `LogOutput.log` only if an error appears; otherwise a screenshot or explicit confirmation is sufficient.
+
+### Result
+
+Awaiting build and smoke test.
+
+---
+
+## 0.1.1 — accepted candidate / superseded by 1.0.0 version-only release candidate
+
+- Status: runtime accepted
 - Purpose: presentation-only follow-up to 0.1.0
 - Source commit: `5d56e50423a6574b59725ed79229eca69ab2e39f`
 - Frozen source ref: `candidate/0.1.1`
@@ -18,20 +39,15 @@
 ### Change
 
 - Removed the em dash between merchant name and Tier.
-- Merchant/Tier pairs now render as e.g. `Мельник II, Фермер I`.
-- A Unicode non-breaking space (U+00A0) joins merchant name and Roman-numeral Tier so wrapping should move the pair together instead of leaving the Tier alone on a new line.
+- Merchant/Tier pairs render as e.g. `Мельник II, Фермер I`.
+- A Unicode non-breaking space (U+00A0) joins merchant name and Roman-numeral Tier so wrapping moves the pair together.
 - Trading/index/filter behavior is unchanged from 0.1.0.
 
-### Requested runtime check
+### Runtime evidence
 
-1. Re-check a multi-buyer tooltip that previously wrapped as `Фермер` + newline + `— I`.
-2. Confirm the pair now stays together as `Фермер I` when wrapping.
-3. Confirm one ordinary one-buyer tooltip still renders normally.
-4. No need to repeat broad technology/cooking-window compatibility checks unless something regresses.
-
-### Result
-
-Awaiting user runtime test.
+- User confirmed the fixed wrapping in-game: multi-buyer entries keep merchant name and Tier together.
+- User confirmed the feature otherwise continued to work correctly.
+- This acceptance closes the only presentation defect found in 0.1.0.
 
 ---
 
@@ -57,8 +73,8 @@ Awaiting user runtime test.
 - No Who Buys This? initialization, index-build, or tooltip-rendering error was observed in the returned log.
 - User visually confirmed correct buyer/tier output for one-buyer and multi-buyer examples.
 - User checked inventory plus technology and cooking UI contexts without observing regressions.
-- User checked multiple game languages; native merchant names followed the active language. The mod-owned heading remained Russian for Russian and English otherwise in this candidate.
-- Remaining defect: a long multi-buyer line could wrap between merchant name and Tier, leaving `— I` isolated on the next line.
+- User checked multiple game languages; native merchant names followed the active language.
+- Remaining defect was only the long-line wrap fixed in 0.1.1.
 
 ### Intended architecture retained
 
