@@ -22,7 +22,7 @@ This file contains only project-specific additions and constraints.
 
 First release is informational only. It must not change prices, economy, merchant stock, trading tiers, items, or progression, and it must not show current or predicted sale prices.
 
-Do not maintain a manual item -> vendor table unless verified native game data is insufficient.
+Do not maintain a manual item -> vendor table.
 
 ## Mandatory project-specific start-of-work checks
 
@@ -32,67 +32,72 @@ Before substantive implementation:
 3. verify unfamiliar Graveyard Keeper internals from current game/decompiled evidence or established open-source mod code before production relies on them;
 4. keep research probes separate from production.
 
-## Project-specific evidence contract
-
-Production architecture must not be fixed until evidence establishes:
-- the complete vendor set and authoritative trading data;
-- the native item-buy eligibility rule;
-- Tier requirement ownership;
-- localized merchant display-name source;
-- tooltip construction seam;
-- safe cache-build lifecycle and any invalidation need;
-- behavior for DLC/special merchants/quality items;
-- the safe compatibility boundary around vendor eligibility methods; generic semantic support for arbitrary third-party trade-overhaul Harmony patches is not a first-release requirement.
-
-Record durable verified findings in `docs/VERIFIED_GAME_DATA.md` with evidence/source references. Unknowns stay explicitly unknown.
-
 ## Architecture / runtime constraints
 
-Preferred direction, only if verified:
-`GameBalance/Vendor native data -> one-time item ID -> buyers/tier index -> cheap tooltip lookup`.
+Frozen first-release architecture:
+`native GameBalance definitions -> one immutable exact-item buyer index -> cheap on-demand state filters -> ItemDefinition.GetTooltipData() postfix`.
 
-Avoid without proven need:
+Build the structural index once from `MainGame.OnGameStartedPlaying()`.
+
+Dynamic state must not cause structural rebuilds:
+- ordinary known/met state: native `KnownNPCList` check at tooltip creation;
+- conditional vendor product types: native `VendorDefinition.GetProductTypes()` check only for conditional candidates;
+- staged Game of Crone vendor proxies: on-demand WGO presence check for staged-family candidates.
+
+Staged `_1/_2/_3` Game of Crone vendor definitions represent one conceptual merchant family and must be merged rather than displayed as separate merchants. Detect the family from verified native definition shape; do not create item mappings.
+
+Keep exact item IDs. Quality variants must not be collapsed.
+
+Avoid:
 - per-frame work;
 - polling or recurring scans;
 - repeated heavy reflection during tooltip creation;
 - artificial NPC/vendor creation for queries;
-- duplicated trade formulas or large hardcoded mappings;
+- duplicated trade/pricing formulas;
+- large hardcoded mappings;
 - broad UI replacement when standard tooltip data can express the result.
 
-Verified UI seam: `ItemDefinition.GetTooltipData()` with standard `BubbleWidgetData`; see `docs/VERIFIED_GAME_DATA.md`. The buyer evaluator and cache lifecycle remain research-gated.
+Verified UI seam: `ItemDefinition.GetTooltipData()` with standard `BubbleWidgetData`.
 
 ## User-facing behavior requirements
 
 - Vanilla-friendly informational QoL only.
-- Use the standard tooltip when practical.
-- Do not expose current/predicted sale price in initial scope.
-- First-release product decision: show only merchants already met/known by the current save, using the game's own known-NPC/alias state. Zero known merchants on a fresh save is a valid ready-empty state and must not trigger structural retries/rebuilds.
+- Use the standard tooltip.
+- Do not expose current/predicted sale price.
+- Show only merchants already known/unlocked by the current save.
+- Ordinary merchants use the game's native known-NPC state.
+- Special staged Game of Crone trade proxies use native proxy presence because the proxy objects are progression-spawned and are not themselves KnownNPC entries.
+- Zero known merchants is a valid ready-empty state and must not trigger retry/rebuild behavior.
+
+## Compatibility boundary
+
+Native Graveyard Keeper 1.407 trading data/semantics are the target. Generic semantic composition with arbitrary third-party Harmony patches to `Vendor.CanBuyItem` / `Vendor.CanTradeItem` is not required for the first release.
+
+Never force `WorldGameObject.vendor` or manufacture Vendor/NPC instances merely to answer tooltip queries.
 
 ## Git / version / acceptance workflow
 
 - `main` is the stable/documentation baseline.
-- Research-only work may use `research/<topic>`; build-bearing runtime work should use a `dev/<version>` or semantic feature branch.
-- Do not consume a numbered release/test version for research-only work.
-- Runtime behavior reaches stable `main` only after the exact candidate has required build/runtime evidence and explicit user acceptance.
-- Numbered handed artifacts are immutable and must retain exact source identity per DevRules.
-- Stable distribution, once applicable, uses GitHub Releases.
+- Research-only work uses `research/<topic>`.
+- Build-bearing production work uses `dev/<version>` or a semantic feature branch.
+- Research-only work does not consume numbered release/test versions.
+- Runtime behavior reaches `main` only after exact candidate build/runtime evidence and explicit user acceptance.
+- Numbered handed artifacts are immutable and retain exact source identity per DevRules.
+- Stable distribution uses GitHub Releases.
 
 ## Runtime test harness specifics
 
-If static inspection cannot settle native lifecycle/eligibility semantics, use a minimal research-only harness that:
-- invokes real native methods/data paths;
-- logs only the values needed to distinguish hypotheses;
-- does not manufacture the result being tested;
-- avoids save-persistent state when possible;
-- is not merged into production by default.
+Research harnesses are setup/observation tools only and are never merged into production automatically. The completed vendor-matrix harness source is frozen at `97375f2d352c5ac1ca22bb186b4249cae16e4141`.
 
 ## CI / build specifics
 
-No hosted CI is required for research/documentation/bootstrap work. Add/run hosted build automation only when a concrete executable property must be proven, especially before a handed candidate.
+This is a public repository. Standard GitHub-hosted runner minutes are not treated as scarce. Use hosted CI whenever compilation, test feedback, or a reproducible user artifact is useful, including research/development candidates.
+
+For this Windows-targeted BepInEx mod, `windows-latest` is an acceptable default when it simplifies or better matches the build. Preserve exact source/artifact identity for handed builds.
 
 ## Long-lived sources of truth
 
 - `AGENTS.md`
 - `docs/VERIFIED_GAME_DATA.md`
 - `README.md`
-- later, `docs/TEST_BUILD_LOG.md` once numbered binaries are handed out
+- later, `docs/TEST_BUILD_LOG.md` for numbered production/test binaries

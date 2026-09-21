@@ -2,352 +2,242 @@
 
 Target: Graveyard Keeper 1.407 (PC).
 
-This is the durable evidence ledger for facts that production code may rely on. Facts marked **verified** are supported by the 1.407 decompile and/or established open-source mod code. Items marked **runtime-open** still require an installed-game probe before production architecture is frozen.
+This is the durable evidence ledger for production decisions in Who Buys This?. Static facts come from the 1.407 decompile/open-source precedent; runtime facts come from the research harness executed on 2026-09-21.
 
 ## Evidence baseline
 
-Primary static game-code evidence:
-- `Kupie/GYK_DECOMP`, ref `6abf79199d92482af1c7573870dd9a20ec2270b9`.
-- `Assembly-CSharp/LazyConsts.cs` at that ref reports `VERSION => 1.407f`, matching the project target.
-
-Open-source mod evidence:
+Primary static evidence:
+- `Kupie/GYK_DECOMP`, ref `6abf79199d92482af1c7573870dd9a20ec2270b9` (`LazyConsts.VERSION == 1.407f`).
 - `p1xel8ted/Graveyard-Keeper-Mods`, ref `ebac55b3fe58402ae7cd5c061d9eb5b0c8e610eb`.
-- Historical supporting example: `qaweofghasdlhtge/GYK-Mods-QMod`, ref `c721a986e03264e52307543ebae132e976a70d6d`.
+- historical supporting example: `qaweofghasdlhtge/GYK-Mods-QMod`, ref `c721a986e03264e52307543ebae132e976a70d6d`.
 
-Do not treat wiki tables or manually curated item/vendor mappings as authoritative when native balance/runtime data can answer the question.
+Runtime research artifact:
+- research source: `97375f2d352c5ac1ca22bb186b4249cae16e4141` (`research/vendor-matrix`);
+- GitHub Actions run: `35602817998`; artifact: `10639463705`;
+- harness version: `0.0.0-research`;
+- target runtime reported Graveyard Keeper 1.407, BepInEx 5.4.23.5, Windows x64, Russian localization;
+- harness explicitly reported `save_mutation=none` and `vendor_instantiation=none`.
 
-## 1. Vendor data source
+Runtime snapshot:
+- world objects: 3545;
+- known NPCs: 81;
+- vendor definitions: 31;
+- known vendors by ordinary known-NPC identity: 20;
+- item definitions: 1157;
+- items with at least one data-derived potential buyer: 234;
+- items with at least one ordinary known buyer in this save: 181;
+- vendors using `additional_types`: 1;
+- product-type resolution failures: 0;
+- vendor definitions with no current WGO: 9;
+- localization anomalies: 1;
+- potentially tradeable items outside product tier 1..3: 0;
+- quality-like items: 543;
+- quality groups with buyer differences: 37;
+- naturally-existing live Vendor instances available to the harness: 0, therefore native parity checks: 0.
 
-**Verified:** `GameBalance` owns `List<VendorDefinition> vendors_data`. Its balance-table registry exposes this collection under `"Vendors"`.
+## 1. Authoritative vendor/item source
 
-Evidence:
-- `Assembly-CSharp/GameBalance.cs`
-- `Assembly-CSharp/GameBalanceBase.cs`
+`GameBalance` owns the loaded `items_data` and `vendors_data` balance collections and builds ID caches during `GameBalance.LoadGameBalance()`.
 
-`GameBalance.LoadGameBalance()` loads the `game_data` resource and builds ID caches. A vendor definition can therefore be retrieved by ID through `GameBalance.me.GetDataOrNull<VendorDefinition>(id)`.
+Production must derive the buyer index from those loaded native definitions. Do not maintain a manual item -> vendor table.
 
-**Important distinction:** `vendors_data` is the complete set of vendor *definitions in the loaded balance*. It is not yet proven to be identical to the set of currently reachable/active merchants for the player's installed DLC and save state. That active-set question is runtime-open.
+The runtime catalog contained 31 vendor definitions. Most ordinary merchants had one matching WGO. Nine definitions had no current WGO: the internal `body_spawn` test-like definition plus inactive staged Game of Crone vendor definitions.
 
-## 2. Native rule for a vendor buying an item
+## 2. Native sale rule
 
-**Verified:** the actual player -> merchant sale filter uses:
+The actual player -> merchant sale filter is:
 
-`Trading.BuyableItemsFilter -> Vendor.CanBuyItem(itemDefinition, true)`
+`Trading.BuyableItemsFilter -> Vendor.CanBuyItem(itemDefinition, true)`.
 
-Evidence:
-- `Assembly-CSharp/Trading.cs`
+`Vendor.CanBuyItem` applies:
+1. item/product-type validity;
+2. product-tier <= current vendor tier;
+3. intersection with `VendorDefinition.GetProductTypes()`;
+4. vendor-specific `not_buying` exclusions.
 
-`Vendor.CanBuyItem(ItemDefinition item_def, bool check_tier = false)`:
-1. rejects null items / items with no `product_types`;
-2. when `check_tier == true`, rejects `item_def.product_tier > vendor.cur_tier`;
-3. requires at least one item product type accepted by `VendorDefinition.GetProductTypes()`;
-4. checks vendor-specific `not_buying` entries:
-   - matching entry with `tier < 1` rejects the item;
-   - matching entry whose `tier == current vendor tier` rejects the item.
+`Vendor.CanTradeItem` is weaker and is not sufficient by itself.
 
-Evidence:
-- `Assembly-CSharp/Vendor.cs`
-- `Assembly-CSharp/VendorDefinition.cs`
+Production will preserve these native data semantics without constructing Vendor instances.
 
-**Verified:** `Vendor.CanTradeItem(ItemDefinition)` is weaker. It only tests product-type compatibility; it does not apply the item tier gate or `not_buying` item exclusions. It is not sufficient by itself to answer “can I sell this item to this merchant?”.
+## 3. Tier semantics
 
-## 3. Tier ownership and semantics
+`ItemDefinition.product_tier` is the normal 1..3 trading-tier gate.
 
-**Verified:** `ItemDefinition.product_tier` is the normal/global trading-tier gate. `ItemDefinition.MAX_PRODUCT_TIER == 3`.
+Runtime evidence:
+- no potentially tradeable item had a tier outside 1..3;
+- every serialized `not_buying` modifier in the loaded 1.407 balance used tier `0` (140 entries), meaning permanent exclusion rather than a tier-specific gap;
+- for every data-derived buyer-matrix row, computed effective tier equaled `ItemDefinition.product_tier`.
 
-When the vanilla trade UI checks whether the merchant buys the item now, `CanBuyItem(..., true)` compares `product_tier` against the vendor's current tier.
+Production should still compute the minimum accepted tier generically from tiers 1..3 so the code follows the native rule rather than depending on the observed simplification.
 
-Evidence:
-- `Assembly-CSharp/ItemDefinition.cs`
-- `Assembly-CSharp/Vendor.cs`
+For staged Game of Crone proxy vendors, the staged definition's `start_tier` is also a lower bound on when that proxy definition exists. Conceptual required tier is therefore the minimum valid tier across the staged family, respecting both item tier and member-stage availability.
 
-**Important nuance:** effective per-vendor availability is not guaranteed to be described by `product_tier` alone because `VendorDefinition.not_buying` can disable a specific item at a specific vendor tier, or permanently when its modifier tier is below 1.
+## 4. Dynamic product types
 
-Therefore the eventual tooltip's “Tier II” should mean “lowest effective tier at which this vendor accepts this item”, not blindly echo `item.product_tier`, unless runtime data proves the two are equivalent for the relevant vendor set.
+`VendorDefinition.GetProductTypes()` returns base product types plus conditionally-enabled `additional_types` evaluated against the current player.
 
-## 4. Dynamic vendor product types
+Runtime evidence found exactly one dynamic vendor:
 
-**Verified:** `VendorDefinition.GetProductTypes()` returns the vendor's base product types plus `additional_types` whose `SmartExpression` evaluates true against `MainGame.me.player`.
+`npc_carpenter` (Tress): `paints => Ppar("tress_paints_unlocked")>0`.
 
-Evidence:
-- `Assembly-CSharp/VendorDefinition.cs`
+In the tested save the condition was false, so `paints` was not in the active product-type list.
 
-Consequence: merchant eligibility can theoretically depend on current player/save state independently of trading tier.
+This means a cache containing only currently-active types would become stale later. Production must instead:
+- index the union of base + possible additional product-type keys once;
+- mark entries whose match depends on a conditional type;
+- at tooltip creation, call native `GetProductTypes()` only for those conditional entries and suppress the buyer while the condition is false.
 
-**Runtime-open:** determine whether active vanilla/DLC vendors in 1.407 actually use `additional_types`, what those expressions depend on, and whether they can change during normal play. This decides whether a truly one-time buyer cache is sufficient or whether a small event-driven invalidation path is required.
+This gives immediate correctness after the quest parameter changes with no polling or structural cache rebuild.
 
-## 5. Static index feasibility
+## 5. Vendor construction is not a read operation
 
-**Verified in principle:** the loaded balance contains all `ItemDefinition` and `VendorDefinition` objects required to enumerate candidate item/vendor pairs, and the relevant IDs/tier/type/exclusion data are exposed in those objects.
+`WorldGameObject.vendor` lazily creates a `Vendor`. The Vendor constructor can initialize money/tier/inventory/save-backed state.
 
-A compact `item ID -> buyer entries` index is therefore feasible without maintaining a manual item/vendor table.
+Production must not force `wgo.vendor`, call `WorldMap.FillVendorsList()` merely for discovery, or manufacture Vendor/NPC instances for queries.
 
-**Not yet accepted for production:** a pure static reimplementation of `CanBuyItem` would duplicate game logic and would not observe arbitrary Harmony patches that change `Vendor.CanBuyItem` or `Vendor.CanTradeItem`. Runtime evidence is required before choosing the exact evaluator.
+The research harness confirmed it could produce the full catalog/matrix without vendor construction or save mutation.
 
-## 6. Real Vendor instances and side-effect risk
+## 6. World-object presence and special staged vendors
 
-**Verified:** `WorldGameObject.vendor` lazily creates a `Vendor` when first accessed, using a `VendorDefinition` whose ID equals the WGO's `obj_id`.
+`WorldMap.RescanWGOsList()` populates the current world-object list before gameplay begins. Vendor definitions can be matched to WGOs by `obj_id` without accessing the lazy vendor property.
 
-Evidence:
-- `Assembly-CSharp/WorldGameObject.cs`
+Runtime evidence showed the Game of Crone cook as three staged definitions:
+- `vendor_refugee_cook_1` start tier 1, no current WGO;
+- `vendor_refugee_cook_2` start tier 2, one current WGO;
+- `vendor_refugee_cook_3` start tier 3, no current WGO.
 
-**Verified:** constructing a `Vendor` is not a read-only operation. Its constructor writes vendor data, resets `levelup_bar_1` / `levelup_bar_2`, and, when the vendor was not initialized, sets starting tier/money, fills inventory, and sets `vendor_inited`.
+The same data shape exists for undertaker and tanner families. Supporting story-graph evidence in `ZlordHUN/GYK-Back-From-The-Grave` shows these vendor proxies are spawned/replaced as their NPC stories advance and explicitly pairs:
+- `vendor_refugee_cook` with `npc_refugee_cook`;
+- `vendor_refugee_undertaker` with `npc_refugee_coffin_maker`;
+- `vendor_refugee_tanner` with `npc_refugee_tanner`.
 
-Evidence:
-- `Assembly-CSharp/Vendor.cs`
+Production should not treat the three staged definitions as three merchants.
 
-Therefore production must **not** discover merchants by blindly calling `wgo.vendor` or forcing `WorldMap.FillVendorsList()` merely for tooltip data until runtime evidence proves this is harmless at the chosen lifecycle point.
+Accepted rule:
+- detect staged families generically from the native definition shape (same base ID after `_1/_2/_3`, matching stage/start-tier pattern and shared localized merchant name);
+- merge a staged family into one conceptual buyer;
+- keep all stages in the structural index so future upgrades do not require rebuilding;
+- consider the staged merchant visible only while at least one member proxy WGO currently exists. Proxy existence is the native progression/unlock signal for these special merchants.
 
-## 7. Runtime world vendor discovery without constructing vendors
+Only staged-family candidates need a live WGO existence check at tooltip time. This is intentionally on-demand and rare; do not add polling or spawn/destroy bookkeeping merely to avoid it.
 
-**Verified:** `WorldMap.RescanWGOsList()` enumerates all `WorldGameObject` children of the current world with `GetComponentsInChildren<WorldGameObject>(true)`, including inactive objects, and stores them in `WorldMap.objs`.
+`WorldMap.GetWorldGameObjectByObjId` is a linear scan of `WorldMap._objs`, so do not use it for every ordinary buyer. Restrict it to staged special-vendor visibility checks.
 
-Evidence:
-- `Assembly-CSharp/WorldMap.cs`
+## 7. Known/met merchant filter
 
-Because `WorldGameObject.vendor` resolves its `VendorDefinition` by the WGO's `obj_id`, a vendor definition can be matched to an existing world object by ID **without accessing the lazy vendor property**.
+The save stores `MainGame.me.save.known_npcs` as `KnownNPCList`. `Flow_Talk` records talked-to NPCs, and `GetOrCreateNPC` resolves `ObjectDefinition.npc_alias` before storage.
 
-This is a promising side-effect-free way to distinguish balance definitions from objects present in the loaded world, but DLC/reachability semantics remain runtime-open.
+For ordinary merchants, production should use the native known-NPC identity at tooltip time. Do not cache the known set structurally and do not rebuild the buyer matrix when a merchant is met.
 
-## 8. Native tier projection
+Runtime evidence confirms this works for ordinary merchants, including a useful negative control: `npc_hunchback` had a current WGO but was not known and was correctly marked unknown.
 
-**Verified:** vanilla `Vendor` itself temporarily increments `cur_tier`, runs normal trade/inventory calculations for the projected tier, then restores the previous tier when calculating next-tier goods/costs.
+Special staged Game of Crone vendor proxies do not map directly to `known_npcs` (the active `vendor_refugee_cook_2` proxy was not itself a known NPC while `npc_refugee_cook` was known). For these proxies use the stage-family WGO-presence rule from section 6 rather than inventing a custom discovery database.
 
-Evidence:
-- `Vendor.GetMoneyNeededForVendorLevelUp()`
-- `Vendor.GetTotalGoodsOnNextTier()`
-- `Assembly-CSharp/Vendor.cs`
+Zero known merchants is a valid ready-empty filter result. It must never trigger retry loops or structural rebuilds.
 
-This establishes temporary tier projection as a native game technique.
+## 8. Localization
 
-**Not yet accepted for production:** using this technique from the mod on live vendors must first prove:
-- the vendor instance already exists naturally;
-- no save/runtime values change after restoration;
-- installed Harmony patches behave correctly under the projected tier;
-- no vendor is artificially initialized just for the query.
+Vanilla `VendorGUI.Open` uses `GJL.L(vendor_obj.obj_id)` for merchant display text.
 
-## 9. Harmony-mod compatibility
+The runtime catalog resolved sane Russian names for every relevant ordinary and staged merchant definition. The one localization anomaly was `body_spawn -> body_spawn`; it had no WGO and is an internal test-like vendor definition, not a player-facing merchant.
 
-**Verified:** real Graveyard Keeper mods patch these methods.
+Production should store localization keys/IDs in the index and call `GJL.L` when formatting a visible tooltip so a language change does not require rebuilding the index.
 
-Current open-source example:
-- `p1xel8ted/Graveyard-Keeper-Mods/src/AppleTreesEnhanced/Patches.cs` patches both `Vendor.CanBuyItem(ItemDefinition,bool)` and `Vendor.CanTradeItem(ItemDefinition)` and can force otherwise-unsellable bee-related items to be accepted.
+## 9. Quality items
 
-Historical examples in `qaweofghasdlhtge/GYK-Mods-QMod` do the same.
+Quality variants are exact item definitions/IDs and native vendor exclusions compare exact IDs.
 
-Consequence:
-- calling the actual patched `Vendor.CanBuyItem` can compose with arbitrary Harmony behavior;
-- reading only `VendorDefinition` cannot generically reproduce arbitrary code patches;
-- inspecting Harmony patch metadata can tell us that a method was patched, but cannot infer the patch's business semantics.
+Runtime evidence found 543 quality-like items and 37 base groups whose buyer/tier signatures differed across variants. Examples include wine, hops, seeds, fish, meals, books and tools.
 
-So “full compatibility with any mod that patches CanBuyItem/CanTradeItem” and “never obtain/use real Vendor instances” may be mutually incompatible requirements. The research harness must determine whether real naturally-created vendor instances are available safely enough to bridge this gap. Otherwise production should prefer the side-effect-free native-data architecture and document code-patch compatibility as a limitation rather than inventing vendor instances.
+Production index key: exact item definition ID. Never collapse quality variants to a base ID.
 
-## 10. Localized merchant display names
+## 10. Tooltip seam
 
-**Verified:** vanilla `VendorGUI.Open` sets the merchant panel title with:
+`ItemDefinition.GetTooltipData(Item item = null, bool full_detail = true)` returns the standard `List<BubbleWidgetData>` used by ordinary item cells.
 
-`GJL.L(vendor_obj.obj_id)`
+DecompDelight independently demonstrates a Harmony postfix on this exact method.
 
-Evidence:
-- `Assembly-CSharp/VendorGUI.cs`
+Accepted production UI seam: Harmony postfix on `ItemDefinition.GetTooltipData()` that appends standard BubbleWidgetData. No separate UI and no per-frame tooltip patch.
 
-Therefore the native localization source for the merchant display name is the vendor object's/vendor definition's ID passed to `GJL.L`. Production should not maintain its own Krezvold/Tress/Cory name table.
+## 11. Lifecycle
 
-**Runtime-open:** enumerate all active vanilla/DLC vendor IDs and confirm each returns a non-empty/sane localized display string in the current language.
+Static load order shows GameBalance loading early, then save/world restore, WGO rescan, player/quest/DLC setup, and finally `MainGame.OnGameStartedPlaying()`.
 
-## 11. Tooltip seam
+In the runtime log, `Rescan WGOs list` occurred before `OnGameStartedPlaying`; the harness then reached a stable ready state and emitted the full 31-vendor/1157-item snapshot without later catalog changes during the observed session.
 
-**Verified:** `ItemDefinition.GetTooltipData(Item item = null, bool full_detail = true)` returns the standard `List<BubbleWidgetData>`.
+Accepted production initialization seam: one build of the immutable structural buyer index from a postfix on `MainGame.OnGameStartedPlaying()`.
 
-**Verified:** `BaseItemCellGUI` passes `ItemDefinition.GetTooltipData(item, true)` directly to the standard tooltip for ordinary item cells. `TechUnlock` also uses this method for item tooltip data.
+No delayed retry loop is required. If the required GameBalance/save objects are unexpectedly missing at that verified seam, fail closed for that load and log once rather than polling.
 
-Evidence:
-- `Assembly-CSharp/ItemDefinition.cs`
-- `Assembly-CSharp/BaseItemCellGUI.cs`
-- `Assembly-CSharp/TechUnlock.cs`
+Dynamic state is deliberately excluded from the immutable index:
+- known/unknown merchant state is checked on tooltip creation;
+- conditional additional product types are checked on tooltip creation only for conditional candidates;
+- staged Game of Crone merchant presence is checked on tooltip creation only for staged-family candidates.
 
-**Verified ecosystem precedent:** DecompDelight uses a Harmony postfix on exactly `ItemDefinition.GetTooltipData` to append standard tooltip data.
+Therefore meeting merchants, unlocking Tress paints, and upgrading a refugee vendor do not require structural invalidation.
 
-Evidence:
-- `p1xel8ted/Graveyard-Keeper-Mods/src/DecompDelight/Patches.cs`
+## 12. Compatibility boundary
 
-Conclusion: this is the preferred production UI seam. No separate UI and no per-frame tooltip patch are indicated.
+Arbitrary third-party Harmony patches to `Vendor.CanBuyItem` / `Vendor.CanTradeItem` are explicitly out of scope for the first release by product decision.
 
-## 12. Quality items
+The runtime harness found zero naturally-created Vendor instances at the research seam, so a parity call into live `CanBuyItem` could not be performed without violating the no-instantiation rule. This is not a blocker under the chosen compatibility boundary.
 
-**Verified:** quality variants are represented as actual item definitions/IDs. `ItemDefinition.GetNameWithoutQualitySuffix()` strips the suffix after the final `:`, and `GameBalance` builds a base-name cache grouping those variants.
+Target semantics are Graveyard Keeper 1.407 native balance/runtime data after normal balance-loading modifications. Ordinary coexistence with other mods remains desirable; semantic composition with trade-overhaul patches is not promised.
 
-Evidence:
-- `Assembly-CSharp/ItemDefinition.cs`
-- `Assembly-CSharp/GameBalance.cs`
+## 13. Prices
 
-Native vendor checks receive the exact `ItemDefinition`, and `not_buying` compares exact item IDs. The buyer index should therefore be keyed by the exact item definition ID. It must not collapse quality variants to a base item unless later evidence explicitly supports doing so.
+Sale prices remain explicitly out of scope. Do not calculate, simulate, cache, or display current/predicted sale value in the first release.
 
-## 13. “Known/met merchant” technical path
+## Accepted production architecture
 
-**Verified:** the save stores `MainGame.me.save.known_npcs` as a `KnownNPCList`.
+`native loaded definitions -> one immutable exact-item buyer index -> cheap on-demand state filters -> ItemDefinition.GetTooltipData postfix`
 
-**Verified:** `Flow_Talk` calls `known_npcs.GetOrCreateNPC(obj_wgo.obj_id)` when talking to an NPC.
+Build once on `MainGame.OnGameStartedPlaying()`:
+1. enumerate item definitions and vendor definitions;
+2. classify ordinary vendor definitions and staged proxy families;
+3. ignore definitions that are neither current ordinary merchants nor valid staged families (for example `body_spawn`);
+4. for each vendor/member, use the union of base and possible conditional product types to discover potential item matches;
+5. apply exact-ID `not_buying` semantics and compute minimum effective tier from native 1..3 rules;
+6. merge staged family members into one conceptual buyer and keep the minimum valid required tier;
+7. store IDs/definition references, required tier, and whether current `GetProductTypes()` recheck is required; do not store localized strings or known-state booleans.
 
-**Verified:** `KnownNPCList.GetOrCreateNPC` resolves `ObjectDefinition.npc_alias` before storing the known NPC. `GetNPC` itself simply looks up the stored ID.
+Tooltip path:
+1. exact item-ID dictionary lookup;
+2. for ordinary buyer entries, native `KnownNPCList.GetNPC` check;
+3. for conditional entries, native `VendorDefinition.GetProductTypes()` check;
+4. for staged proxy families, verify at least one member WGO currently exists;
+5. resolve merchant display name with `GJL.L`;
+6. append standard BubbleWidgetData;
+7. if no visible buyers remain, append nothing.
 
-Evidence:
-- `Assembly-CSharp/KnownNPCList.cs`
-- `Assembly-CSharp/FlowCanvas/Nodes/Flow_Talk.cs`
-- `Assembly-CSharp/ObjectDefinition.cs`
-
-Therefore “only merchants the player has met” is technically feasible without maintaining a custom discovery database. The likely lookup identity is `obj_def.npc_alias` when present, otherwise the vendor/object ID.
-
-**Runtime-open:** verify that every relevant special/DLC trader maps cleanly to `KnownNPCList`. Some trade objects may not behave like ordinary NPCs.
-
-## 14. Load lifecycle and candidate cache timing
-
-**Verified load order:**
-- `MainGame.GeneralInit()` calls `GameBalance.LoadGameBalance()` early.
-- Save/world startup later calls `PrepareAfterLoad`, activates the world, rescans chunks, initializes WGOs, spawns the player, initializes quests, rescans `WorldMap`, restores save state, and initializes DLC systems.
-- Near the end of startup it calls `MainGame.OnGameStartedPlaying()`; after that it starts flow behaviours and calls `GameSave.LateSaveFixer()` and `GameSave.GlobalEventsCheck()`.
-
-Evidence:
-- `Assembly-CSharp/MainGame.cs`
-- `Assembly-CSharp/SaveSlotsMenuGUI.cs`
-
-Open-source mods also commonly mutate balance data in postfixes of `GameBalance.LoadGameBalance`. `GameBalanceDumper` intentionally uses `Priority.First` to capture pristine data before other balance-modifying postfixes, proving patch order matters.
-
-Evidence:
-- `p1xel8ted/Graveyard-Keeper-Mods/src/GameBalanceDumper/Patches.cs`
-
-Conclusion: building the final buyer index directly in an ordinary `LoadGameBalance` postfix is premature because player/save/world vendor state is not ready and mod ordering can matter.
-
-Candidate one-time lifecycle seams for runtime verification:
-1. a postfix on `MainGame.OnGameStartedPlaying()`, possibly with a single deferred callback if final save-fix/global-event state matters; or
-2. a late postfix on the one-per-load `GameSave.GlobalEventsCheck()`.
-
-Do not select one for production until the research harness proves the required data are complete and stable there.
-
-## 15. Potential buyer vs current buyer
-
-These are different questions.
-
-**Current buyer:** vanilla answers this with `Vendor.CanBuyItem(item, true)`, which depends on the merchant's current tier and may depend on player-state-driven additional product types.
-
-**Potential buyer:** for this mod, the useful interpretation is “there exists a legitimate merchant tier/state in which this vendor accepts the item”. Vanilla does not expose a single pure, side-effect-free method with that exact semantic.
-
-The mod therefore needs a verified derivation strategy for potential buyer + effective required tier. Static source proves the ingredients exist, but runtime data must establish which edge cases actually occur before the display contract is frozen.
-
-## 16. DLC and special vendors
-
-Static source proves DLC-specific merchant/inventory logic exists (for example Refugees content references DLC-specific vendor-related IDs), but the decompile does not contain the serialized `game_data` balance rows needed to enumerate every 1.407 vendor definition and its live DLC gating.
-
-Status: **runtime-open**.
-
-Production must not infer DLC membership from ID prefixes or maintain a hardcoded DLC vendor list unless runtime evidence proves no native alternative exists.
-
-## 17. Prices
-
-Out of scope for the first release. No price field, estimate, current sale value, or simulated price calculation should be added while implementing the buyer/tier feature.
-
-## Proposed architecture, pending runtime verification
-
-Preferred path remains:
-
-`loaded native balance/world data -> one buyer index -> ItemDefinition.GetTooltipData() postfix`
-
-More concretely:
-
-1. At a verified one-per-save-load lifecycle point, enumerate `GameBalance.me.items_data` and the relevant vendor definitions.
-2. Match vendor definitions to current-world WGOs by ID without forcing `wgo.vendor`.
-3. Resolve native localized merchant names with `GJL.L(vendorId)`.
-4. Build a compact dictionary keyed by exact item definition ID. Each entry contains merchant ID, localized-name key/result as appropriate, and effective required tier.
-5. The tooltip postfix performs only a dictionary lookup, optional cheap “known merchant” filtering, formatting, and appending standard `BubbleWidgetData`.
-6. No per-frame work, polling, recurring scans, heavy reflection per tooltip, artificial NPC/vendor creation, or sale-price simulation.
-
-If runtime evidence proves that all relevant vendor instances already exist naturally and tier projection is side-effect-free, the index evaluator may call the real patched `Vendor.CanBuyItem` to maximize Harmony compatibility. If not, use the safest native-data derivation and document the narrower compatibility boundary.
-
-## Required research-only runtime probe
-
-Static research is insufficient to freeze production. The next executable should be a diagnostic harness, not the production mod.
-
-It should run only after the normal save/world startup and emit one structured report containing:
-
-### Catalog snapshot
-For every `GameBalance.me.vendors_data` entry:
-- vendor ID;
-- `GJL.L(id)` result;
-- matching `WorldMap.objs` count;
-- object type, `npc_alias`, and whether the NPC is in `known_npcs`;
-- `start_tire`;
-- base product types;
-- `additional_types` count and enough expression information to classify whether they are state-dependent;
-- all `not_buying` entries;
-- relevant DLC availability state when it can be obtained natively.
-
-### Live-instance safety snapshot
-Without invoking `wgo.vendor`:
-- inspect whether the WGO already has a naturally-created backing `Vendor`;
-- log `vendor_inited`, saved/current tier parameters, and level-up parameters before any experiment;
-- count how many active vendor WGOs are naturally instantiated at the candidate lifecycle seam.
-
-Do **not** instantiate missing vendors.
-
-### Native parity test
-For naturally-existing Vendor instances only:
-- compare the proposed data-derived result to the actual patched `CanBuyItem(item, true)` at the real current tier;
-- for a small representative set, project tiers 1..3 using the vanilla set/restore pattern, call the real method, restore immediately, and prove all observed vendor/save parameters are byte/value-identical afterward;
-- include ordinary items, quality variants, tools/special items, and DLC items/vendors.
-
-### Harmony inventory
-Use Harmony patch metadata to record patch owners on:
-- `Vendor.CanBuyItem(ItemDefinition,bool)`;
-- `Vendor.CanTradeItem(ItemDefinition)`.
-
-This establishes whether the installed mod set contains code-level trade-eligibility overrides. Do not attempt to interpret arbitrary patch semantics from metadata alone.
-
-### Data-shape/anomaly report
-Enumerate:
-- item `product_tier` values outside 1..3 among potentially tradeable items;
-- vendor-specific tier gaps caused by `not_buying`;
-- state-dependent `additional_types`;
-- vendor definitions with no WGO;
-- vendor WGOs with no definition;
-- missing/placeholder localizations;
-- special/DLC vendors that do not map cleanly to `known_npcs`;
-- exact quality-item behavior.
-
-### Lifecycle check
-Run the same small counts at the candidate one-time lifecycle seams and identify the first seam where:
-- GameBalance is final enough to include other mods' balance edits;
-- player/save data exist;
-- WorldMap has been rescanned;
-- DLC systems relevant to vendor presence are initialized;
-- no later startup step changes the catalog inputs.
-
-The harness must not write persistent gameplay state and must not be merged into production by default.
+Performance contract:
+- no per-frame Update;
+- no polling;
+- no recurring catalog scans;
+- no Vendor/NPC instantiation;
+- no heavy reflection on hover;
+- no manual item -> vendor mapping;
+- no duplicated pricing/economy formula;
+- no cache rebuild merely because known NPCs or story progression changed.
 
 ## Product decisions fixed 2026-09-21
 
-- **Display only merchants already met/known by the current save.** Use the game's own `KnownNPCList`/NPC alias identity rather than a custom discovery database.
-- **Do not design first-release architecture around arbitrary third-party Harmony patches to `Vendor.CanBuyItem` / `Vendor.CanTradeItem`.** Native 1.407 game data/semantics are the compatibility target. Ordinary coexistence remains desirable, but generic semantic composition with trade-overhauling mods is explicitly out of scope.
-
-### Lifecycle lesson carried from Day Wheel Quest Markers
-
-A fresh Graveyard Keeper save may legitimately have no relevant known NPCs yet. In Day Wheel Quest Markers, treating missing weekday NPCs as "cache not ready" caused repeated/heavy initialization and later a measured 302.22 ms first-NPC structural rebuild.
-
-For Who Buys This?:
-- an empty `known_npcs` / zero known merchants is a valid **ready empty filter result**, not an initialization failure;
-- structural vendor/item discovery must not depend on the first known merchant appearing;
-- meeting a new merchant may only require cheap known-state rebinding/filtering, never rebuilding the structural buyer matrix;
-- no retry loop or recurring heavy scan is permitted merely because zero merchants are known.
+- Show only merchants already known/unlocked for the current save. Ordinary merchants use native KnownNPCList; staged Game of Crone proxy merchants use their native spawned proxy presence because those trade objects are progression-created and are not themselves KnownNPC entries.
+- Generic semantic support for arbitrary third-party trade-overhaul Harmony patches is not a first-release requirement.
+- Prices are not part of the first release.
 
 ## Current architecture status
 
+- Vendor/item source: **verified**.
+- Native sale semantics: **verified**.
+- Tier semantics/data shape: **verified**.
+- Localization: **verified**.
 - Standard tooltip seam: **verified**.
-- Native current-sale method: **verified**.
-- Balance source for vendor/item definitions: **verified**.
-- Native merchant localization key: **verified**.
-- Exact-item/quality strategy: **verified**.
-- Side-effect risk of forcing Vendor construction: **verified; avoid**.
-- One-time item -> buyers/tier index: **feasible, evaluator not yet frozen**.
-- Generic compatibility with arbitrary CanBuyItem/CanTradeItem Harmony patches: **explicitly out of scope for first release**.
-- Active DLC/special vendor set: **runtime-open**.
-- Dynamic `additional_types` / cache invalidation need: **runtime-open**.
-- Final cache-build lifecycle seam: **runtime-open**.
+- Exact quality-item handling: **verified**.
+- Dynamic additional product types: **verified; Tress paints handled on-demand**.
+- DLC/special staged vendor shape: **verified; handled as conceptual proxy families**.
+- Known merchant lifecycle: **verified for ordinary vendors; special proxies use native presence signal**.
+- Cache-build lifecycle: **frozen at OnGameStartedPlaying**.
+- Vendor construction: **forbidden/unused**.
+- Per-frame/polling requirement: **none**.
+- Production architecture: **frozen; implementation may begin**.
