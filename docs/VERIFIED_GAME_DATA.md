@@ -240,4 +240,4 @@ Performance contract:
 - Cache-build lifecycle: **frozen at OnGameStartedPlaying**.
 - Vendor construction: **forbidden/unused**.
 - Per-frame/polling requirement: **none**.
-- Production architecture: **frozen; implementation may begin**.
+- Production architecture: **implemented and accepted in stable 1.0.0; runtime source frozen at `candidate/1.0.0` / `7470e783015faf59b32c7d51a77685fdbb731d59`**.
