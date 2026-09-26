@@ -208,7 +208,29 @@ namespace WhoBuysThis
             string language = string.Empty;
             try { language = _getCurrentLanguage.Invoke(null, null) as string ?? string.Empty; }
             catch { }
-            return language.StartsWith("ru", StringComparison.OrdinalIgnoreCase) ? "Покупают" : "Buyers";
+            return GetBuyersLabelForLanguage(language);
+        }
+
+        internal static string GetBuyersLabelForLanguage(string language)
+        {
+            string normalized = string.IsNullOrEmpty(language)
+                ? "en"
+                : language.Trim().ToLowerInvariant().Replace('_', '-');
+
+            switch (normalized)
+            {
+                case "de": return "Käufer";
+                case "es": return "Compradores";
+                case "fr": return "Acheteurs";
+                case "it": return "Acquirenti";
+                case "ja": return "買い手";
+                case "ko": return "구매자";
+                case "pl": return "Kupujący";
+                case "pt-br": return "Compradores";
+                case "ru": return "Покупают";
+                case "zh-cn": return "买家";
+                default: return "Buyers";
+            }
         }
 
         internal static object CreateSeparator()
