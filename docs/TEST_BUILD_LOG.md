@@ -1,5 +1,64 @@
 # Test Build Log
 
+## 1.0.1 — localization candidate
+
+- Status: handed candidate / awaiting focused runtime acceptance
+- Purpose: localize the mod-owned buyer heading for every Graveyard Keeper interface language
+- Parent stable release: 1.0.0
+- Source commit: `11249ae8f5bf816eaab18987c2162419e057e4cf`
+- Frozen source ref: `candidate/1.0.1`
+- Development branch: `dev/1.0.1`
+- GitHub Actions run: `36237282249`
+- Artifact ID: `10904104341`
+- Artifact name: `WhoBuysThis-1.0.1-11249ae8f5bf816eaab18987c2162419e057e4cf`
+- Artifact ZIP digest: `sha256:8ec4d5de34bfbb1251f60f01f9ffd4b573bac7ce080968131527d40d15a06290`
+- DLL: `WhoBuysThis.dll`
+- DLL SHA-256: `026948f78b39a865e449e9cf8e820f70dd57e4bf8d2d5731f6045f76c510faf4`
+- Build: Windows GitHub-hosted runner, Release/net48, successful
+
+### Change
+
+The only mod-owned localized tooltip heading now covers all 11 interface languages supported by Graveyard Keeper:
+
+- English: `Buyers`
+- German: `Käufer`
+- Spanish: `Compradores`
+- French: `Acheteurs`
+- Italian: `Acquirenti`
+- Japanese: `買い手`
+- Korean: `구매자`
+- Polish: `Kupujący`
+- Brazilian Portuguese: `Compradores`
+- Russian: `Покупают`
+- Simplified Chinese: `买家`
+
+Language codes are normalized case-insensitively with `_` / `-` equivalence, so variants such as `pt_BR` / `pt-BR` and `zh_CN` / `zh-CN` resolve identically. Unknown/empty codes fall back to English.
+
+Merchant names remain owned by the game and are still localized on demand through `GJL.L`. Buyer discovery, known/unlocked filtering, Tier calculation, non-breaking-space formatting, and tooltip structure are unchanged.
+
+The standard `BubbleWidgetText.Draw()` path calls `GJL.EnsureLabelHasCorrectFont(...)`, so this candidate deliberately does not add a parallel font map or language-change hook.
+
+### Required runtime check
+
+This is a visual/localization-only acceptance pass; trading mechanics do not need to be re-tested.
+
+1. Confirm BepInEx reports `Who Buys This? 1.0.1`.
+2. Use one item with visible buyer information.
+3. Switch through representative script/font families and confirm the heading changes immediately and renders normally:
+   - English or another Latin language;
+   - Russian;
+   - Japanese;
+   - Korean;
+   - Simplified Chinese.
+4. If convenient, cycle the remaining Latin languages as a translation spot-check; no separate trade scenario is required.
+5. Return a log only if an error appears; screenshots or explicit confirmation are sufficient.
+
+### Result
+
+Awaiting focused localization/runtime acceptance.
+
+---
+
 ## 1.0.0 — stable
 
 - Status: accepted stable release
