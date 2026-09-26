@@ -15,6 +15,12 @@
 - DLL: `WhoBuysThis.dll`
 - DLL SHA-256: `026948f78b39a865e449e9cf8e820f70dd57e4bf8d2d5731f6045f76c510faf4`
 - Build: Windows GitHub-hosted runner, Release/net48, successful
+- Stable promotion commit: `e63b8e10571873cb3cf1945a40f0dd8466ab7919`
+- Stable tag: `v1.0.1` -> `e63b8e10571873cb3cf1945a40f0dd8466ab7919`
+- GitHub Release: `https://github.com/NikichMods/WhoBuysThis/releases/tag/v1.0.1`
+- Release publication run: `36237862657`
+- Release asset digest reported by GitHub: `sha256:026948f78b39a865e449e9cf8e820f70dd57e4bf8d2d5731f6045f76c510faf4`
+- Publication reused artifact `10904104341`; the publication workflow contained no compile/build step and verified the DLL SHA-256 before release upload.
 
 ### Change
 
@@ -46,6 +52,7 @@ The standard `BubbleWidgetText.Draw()` path calls `GJL.EnsureLabelHasCorrectFont
 - The same log records live game language loads for all 11 supported locale codes, including `pt-br` and `zh_cn`.
 - The observed index diagnostic counts differ from the earlier 1.0.0 test session, but `BuyerIndex.cs` is unchanged in 1.0.1; the counts reflect the loaded native/modded balance/world state and are not evidence of a localization regression.
 - Acceptance scope was localization/presentation only; trading behavior was intentionally not re-tested because that behavior is unchanged from stable 1.0.0.
+- Stable promotion reused the exact accepted DLL. No 1.0.1 rebuild was performed.
 
 ---
 
