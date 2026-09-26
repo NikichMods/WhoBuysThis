@@ -4,12 +4,13 @@ A vanilla-friendly informational QoL mod for Graveyard Keeper 1.407.
 
 ## Stable release
 
-Current stable version: **1.0.0**. The stable binary is published in the GitHub Release `v1.0.0`.
+Current stable version: **1.0.1**. The stable binary is published in the GitHub Release `v1.0.1`.
 
 Who Buys This? extends the standard item tooltip with:
 - the merchant(s) who buy the exact item variant;
 - the trading Tier at which selling that item becomes available;
-- only merchants already known/unlocked in the current save.
+- only merchants already known/unlocked in the current save;
+- a buyer heading localized for all 11 languages supported by the game.
 
 Example: `Мельник II, Фермер I`.
 

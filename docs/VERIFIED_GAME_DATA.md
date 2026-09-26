@@ -141,7 +141,11 @@ Vanilla `VendorGUI.Open` uses `GJL.L(vendor_obj.obj_id)` for merchant display te
 
 The runtime catalog resolved sane Russian names for every relevant ordinary and staged merchant definition. The one localization anomaly was `body_spawn -> body_spawn`; it had no WGO and is an internal test-like vendor definition, not a player-facing merchant.
 
-Production should store localization keys/IDs in the index and call `GJL.L` when formatting a visible tooltip so a language change does not require rebuilding the index.
+Production stores localization keys/IDs in the index and calls `GJL.L` when formatting a visible tooltip so a language change does not require rebuilding the index.
+
+Who Buys This? owns one additional localized string: the buyer heading. Stable 1.0.1 covers all 11 Graveyard Keeper interface languages: English, German, Spanish, French, Italian, Japanese, Korean, Polish, Brazilian Portuguese, Russian, and Simplified Chinese. Locale matching is case-insensitive and normalizes `_` / `-` variants (for example `pt_BR` / `pt-BR` and `zh_CN` / `zh-CN`), with English fallback for unknown/empty codes.
+
+The standard `BubbleWidgetText.Draw()` path calls `GJL.EnsureLabelHasCorrectFont(...)`; runtime acceptance on 2026-09-26 confirmed correct live switching across the game's language set, including Latin, Cyrillic, Japanese, Korean, and Simplified Chinese. No mod-maintained font map or polling hook is required.
 
 ## 9. Quality items
 
@@ -240,4 +244,4 @@ Performance contract:
 - Cache-build lifecycle: **frozen at OnGameStartedPlaying**.
 - Vendor construction: **forbidden/unused**.
 - Per-frame/polling requirement: **none**.
-- Production architecture: **implemented and accepted in stable 1.0.0; runtime source frozen at `candidate/1.0.0` / `7470e783015faf59b32c7d51a77685fdbb731d59`**.
+- Production architecture: **implemented and accepted in stable 1.0.1; runtime source frozen at `candidate/1.0.1` / `11249ae8f5bf816eaab18987c2162419e057e4cf`**.

@@ -1,5 +1,54 @@
 # Test Build Log
 
+## 1.0.1 — stable
+
+- Status: runtime accepted / stable
+- Purpose: localize the mod-owned buyer heading for every Graveyard Keeper interface language
+- Parent stable release: 1.0.0
+- Source commit: `11249ae8f5bf816eaab18987c2162419e057e4cf`
+- Frozen source ref: `candidate/1.0.1`
+- Development branch: `dev/1.0.1`
+- GitHub Actions run: `36237282249`
+- Artifact ID: `10904104341`
+- Artifact name: `WhoBuysThis-1.0.1-11249ae8f5bf816eaab18987c2162419e057e4cf`
+- Artifact ZIP digest: `sha256:8ec4d5de34bfbb1251f60f01f9ffd4b573bac7ce080968131527d40d15a06290`
+- DLL: `WhoBuysThis.dll`
+- DLL SHA-256: `026948f78b39a865e449e9cf8e820f70dd57e4bf8d2d5731f6045f76c510faf4`
+- Build: Windows GitHub-hosted runner, Release/net48, successful
+
+### Change
+
+The only mod-owned localized tooltip heading now covers all 11 interface languages supported by Graveyard Keeper:
+
+- English: `Buyers`
+- German: `Käufer`
+- Spanish: `Compradores`
+- French: `Acheteurs`
+- Italian: `Acquirenti`
+- Japanese: `買い手`
+- Korean: `구매자`
+- Polish: `Kupujący`
+- Brazilian Portuguese: `Compradores`
+- Russian: `Покупают`
+- Simplified Chinese: `买家`
+
+Language codes are normalized case-insensitively with `_` / `-` equivalence, so variants such as `pt_BR` / `pt-BR` and `zh_CN` / `zh-CN` resolve identically. Unknown/empty codes fall back to English.
+
+Merchant names remain owned by the game and are still localized on demand through `GJL.L`. Buyer discovery, known/unlocked filtering, Tier calculation, non-breaking-space formatting, and tooltip structure are unchanged.
+
+The standard `BubbleWidgetText.Draw()` path calls `GJL.EnsureLabelHasCorrectFont(...)`, so this candidate deliberately does not add a parallel font map or language-change hook.
+
+### Runtime acceptance
+
+- User visually confirmed that the buyer heading switches correctly and renders normally while cycling the supported game languages.
+- Returned runtime log shows `Who Buys This? 1.0.1` loading successfully.
+- Buyer index initialized successfully with no Who Buys This? initialization, index-build, or tooltip-rendering exception.
+- The same log records live game language loads for all 11 supported locale codes, including `pt-br` and `zh_cn`.
+- The observed index diagnostic counts differ from the earlier 1.0.0 test session, but `BuyerIndex.cs` is unchanged in 1.0.1; the counts reflect the loaded native/modded balance/world state and are not evidence of a localization regression.
+- Acceptance scope was localization/presentation only; trading behavior was intentionally not re-tested because that behavior is unchanged from stable 1.0.0.
+
+---
+
 ## 1.0.0 — stable
 
 - Status: accepted stable release
