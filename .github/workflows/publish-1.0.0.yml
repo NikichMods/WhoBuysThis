@@ -1,0 +1,58 @@
+name: Publish stable 1.0.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-1.0.0.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARTIFACT_ID: '10654071531'
+      TARGET_SHA: '30f1fea50c1e0585c740a92e82f1043bad99da2f'
+      EXPECTED_DLL_SHA256: '6f57726ad8dd81f0e32b7dfb8bf35187be8efade86e00132036c9ade7154e7f0'
+
+    steps:
+      - name: Download exact accepted artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -L             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"             -o accepted.zip
+          mkdir accepted
+          unzip -q accepted.zip -d accepted
+
+      - name: Verify exact DLL identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f accepted/WhoBuysThis.dll
+          echo "$EXPECTED_DLL_SHA256  accepted/WhoBuysThis.dll" | sha256sum -c -
+
+      - name: Publish tag and GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'EOF'
+          First stable release of Who Buys This? for Graveyard Keeper 1.407.
+
+          - Shows already-known/unlocked merchants that buy the exact item.
+          - Shows the trading Tier at which selling becomes available.
+          - Uses the standard item tooltip.
+          - Informational only: no price, economy, stock, item, Tier, or progression changes.
+
+          Stable asset SHA-256:
+          `6f57726ad8dd81f0e32b7dfb8bf35187be8efade86e00132036c9ade7154e7f0`
+
+          Exact accepted candidate source:
+          `7470e783015faf59b32c7d51a77685fdbb731d59`
+          EOF
+
+          gh release create v1.0.0 accepted/WhoBuysThis.dll             --repo "$GITHUB_REPOSITORY"             --target "$TARGET_SHA"             --title "Who Buys This? 1.0.0"             --notes-file release-notes.md
