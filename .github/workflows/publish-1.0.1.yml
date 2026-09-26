@@ -1,0 +1,58 @@
+name: Publish stable 1.0.1
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-1.0.1.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARTIFACT_ID: '10904104341'
+      TARGET_SHA: 'e63b8e10571873cb3cf1945a40f0dd8466ab7919'
+      EXPECTED_DLL_SHA256: '026948f78b39a865e449e9cf8e820f70dd57e4bf8d2d5731f6045f76c510faf4'
+
+    steps:
+      - name: Download exact accepted artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -L             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"             -o accepted.zip
+          mkdir accepted
+          unzip -q accepted.zip -d accepted
+
+      - name: Verify exact DLL identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f accepted/WhoBuysThis.dll
+          echo "$EXPECTED_DLL_SHA256  accepted/WhoBuysThis.dll" | sha256sum -c -
+
+      - name: Publish tag and GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'EOF'
+          Localization fix release for Who Buys This? on Graveyard Keeper 1.407.
+
+          - Localizes the buyer heading for all 11 languages supported by the game.
+          - Live language switching follows the current game locale.
+          - Merchant names remain localized by the game's native GJL data.
+          - No changes to buyer discovery, known/unlocked filtering, trading tiers, prices, economy, stock, items, or progression.
+
+          Stable asset SHA-256:
+          `026948f78b39a865e449e9cf8e820f70dd57e4bf8d2d5731f6045f76c510faf4`
+
+          Exact accepted candidate source:
+          `11249ae8f5bf816eaab18987c2162419e057e4cf`
+          EOF
+
+          gh release create v1.0.1 accepted/WhoBuysThis.dll             --repo "$GITHUB_REPOSITORY"             --target "$TARGET_SHA"             --title "Who Buys This? 1.0.1"             --notes-file release-notes.md
