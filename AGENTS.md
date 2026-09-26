@@ -100,7 +100,7 @@ For this Windows-targeted BepInEx mod, `windows-latest` is an acceptable default
 - `AGENTS.md`
 - `docs/VERIFIED_GAME_DATA.md`
 - `README.md`
-- later, `docs/TEST_BUILD_LOG.md` for numbered production/test binaries
+- `docs/TEST_BUILD_LOG.md` for numbered production/test binaries and stable release identity
 
 ## Shared Graveyard Keeper research
 
