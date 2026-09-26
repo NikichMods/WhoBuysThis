@@ -4,7 +4,7 @@ A vanilla-friendly informational QoL mod for Graveyard Keeper 1.407.
 
 ## Stable release
 
-Current stable version: **1.0.0**.
+Current stable version: **1.0.0**. The stable binary is published in the GitHub Release `v1.0.0`.
 
 Who Buys This? extends the standard item tooltip with:
 - the merchant(s) who buy the exact item variant;

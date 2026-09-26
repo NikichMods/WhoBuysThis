@@ -16,6 +16,12 @@
 - Stable DLL: `WhoBuysThis.dll`
 - DLL SHA-256: `6f57726ad8dd81f0e32b7dfb8bf35187be8efade86e00132036c9ade7154e7f0`
 - Build: Windows GitHub-hosted runner, Release/net48, successful
+- Stable promotion commit: `30f1fea50c1e0585c740a92e82f1043bad99da2f`
+- Stable tag: `v1.0.0` -> `30f1fea50c1e0585c740a92e82f1043bad99da2f`
+- GitHub Release: `https://github.com/NikichMods/WhoBuysThis/releases/tag/v1.0.0`
+- Release publication run: `36236411749`
+- Release asset digest reported by GitHub: `sha256:6f57726ad8dd81f0e32b7dfb8bf35187be8efade86e00132036c9ade7154e7f0`
+- Publication reused artifact `10654071531`; the publication workflow contained no compile/build step and verified the DLL SHA-256 before release upload.
 
 ### Acceptance basis
 
@@ -23,7 +29,7 @@
 - The production-code delta from accepted 0.1.1 to 1.0.0 changes only `PluginVersion` from `0.1.1` to `1.0.0`; the remaining candidate delta is build/version metadata and documentation.
 - The exact 1.0.0 candidate was built successfully from `7470e783015faf59b32c7d51a77685fdbb731d59`.
 - On 2026-09-26 the user confirmed that the release was already considered completed and authorized closing the remaining repository promotion/documentation work. A duplicate runtime smoke test was therefore not required.
-- Stable promotion must reuse the exact accepted DLL above; do not rebuild different 1.0.0 bytes.
+- Stable promotion reused the exact accepted DLL above. No 1.0.0 rebuild was performed.
 
 ---
 
